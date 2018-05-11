@@ -41,7 +41,6 @@ defmodule Bot.Mixfile do
   defp deps do
     [{:images, in_umbrella: true},
     {:nostrum, git: "https://github.com/Kraigie/nostrum.git"},
-    {:mock, "~> 0.2.0", only: :test},
-    {:websocket_client, git: "https://github.com/jeremyong/websocket_client.git", branch: "master", override: true}]
+    {:mock, "~> 0.2.0", only: :test}]
   end
 end

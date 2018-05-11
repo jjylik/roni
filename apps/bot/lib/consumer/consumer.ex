@@ -12,44 +12,37 @@ defmodule RoniBot.Consumer do
   alias Nostrum.Api
   alias Images.Reader
   require Logger
+  import Nostrum.Struct.Embed
 
   @throttle_limit 10
   @image_history_size 2
  
   def start_link do
-    Consumer.start_link(__MODULE__, %{:last_command => :os.system_time(:seconds), :previous_images => []})
+    Consumer.start_link(__MODULE__)
   end
 
-  def handle_event({:MESSAGE_CREATE, {msg}, ws_state}, state) do
-    state = cond do
-      throttle_limit?(state) -> state
-      msg.content == "!roni" -> post_random_image(msg.channel_id, state)
-      true -> state
+  def handle_event({:MESSAGE_CREATE, {msg}, _ws_state}) do
+
+    cond do
+      msg.content == "!ping" -> Api.create_message(msg.channel_id, content: "pong!")
+      msg.content == "!roni" -> post_random_image(msg.channel_id)
+      msg.content == "!help" -> Api.create_message(msg.channel_id, content: "Commands: !roni")
+      true -> :ignore
     end
-    {:ok, state}
   end
 
-  def handle_event(_, state) do
-    {:ok, state}
+  def handle_event(_event) do
+    :noop
   end
 
-  defp throttle_limit?(state) do
-    (:os.system_time(:seconds) - state[:last_command]) < @throttle_limit
-  end
-
-  defp post_random_image(channel_id, state) do
+  defp post_random_image(channel_id) do
+    embed =
+    %Nostrum.Struct.Embed{}
+    |> put_title("heloust")
     directory = Application.get_env(:bot, :images_directory)
-    previous_images = state[:previous_images]
-    {filename, binary} = Reader.get_one(directory, previous_images)
-    Api.create_message(channel_id, [file_name: filename, file: binary], false)
-    state
-      |> Map.put(:previous_images, add_to_previous_images(previous_images, filename))
-      |> Map.put(:last_command, :os.system_time(:seconds))
-  end
-
-  defp add_to_previous_images(previous_images, filename) do
-    [filename | previous_images]
-      |> Enum.slice(0, @image_history_size)
+    previous_images = []
+    filename = Reader.get_one(directory, previous_images)
+    Api.create_message(channel_id, file: filename, embed: embed)
   end
 
 end
